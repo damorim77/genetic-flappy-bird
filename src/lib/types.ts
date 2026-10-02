@@ -26,6 +26,8 @@ export interface BirdState {
   y: number;
   vy: number;
   alive: boolean;
+  /** Aparência sorteada no nascimento (0=amarelo, 1=azul, 2=vermelho), fixa até a morte. */
+  colorIndex: number;
   /** Ticks sobrevividos + tiebreak fracionário [0, 0.5] na morte. */
   fitness: number;
   genome: Genome;

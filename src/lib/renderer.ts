@@ -37,17 +37,13 @@ export function draw(
   for (const bird of sim.birds) {
     if (bird.alive) alive.push(bird);
   }
-  let best: BirdState | undefined;
-  for (const bird of alive) {
-    if (best === undefined || bird.fitness > best.fitness) best = bird;
-  }
 
   if (sprites === null) {
     drawFlatWorld(ctx, sim, floorY);
-    drawFlatBirds(ctx, alive, best, sim);
+    drawFlatBirds(ctx, alive, sim);
   } else {
     drawSpriteWorld(ctx, sprites, sim, floorY);
-    drawSpriteBirds(ctx, sprites, alive, best, sim);
+    drawSpriteBirds(ctx, sprites, alive, sim);
   }
 
   ctx.font = "bold 13px ui-monospace, SFMono-Regular, Menlo, monospace";
@@ -145,33 +141,21 @@ function drawSpriteBirds(
   ctx: CanvasRenderingContext2D,
   sprites: SpriteSheet,
   alive: BirdState[],
-  best: BirdState | undefined,
   sim: Simulation,
 ): void {
   const frame = Math.floor(sim.ticksThisGeneration / FLAP_TICKS) % 3;
   const maxFall = sim.config.maxFallSpeed;
+  const palette = [sprites.yellowBird, sprites.blueBird, sprites.redBird] as const;
 
   for (const bird of alive) {
-    const isBest = bird === best;
-    if (isBest) {
-      // Halo para o campeão da geração se achar no meio dos 100.
-      ctx.beginPath();
-      ctx.arc(BIRD_X, bird.y, BIRD_RADIUS + 7, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(253, 224, 71, 0.35)";
-      ctx.fill();
-    }
-    const img = (isBest ? sprites.blueBird[frame] : sprites.yellowBird[frame]) ?? undefined;
+    const frames = palette[bird.colorIndex % palette.length] ?? sprites.yellowBird;
+    const img = frames[frame] ?? frames[0];
     const tilt = Math.max(-1, Math.min(1, bird.vy / maxFall)) * MAX_TILT;
     ctx.save();
     ctx.translate(BIRD_X, bird.y);
     ctx.rotate(tilt);
     if (img !== undefined) {
       ctx.drawImage(img, -BIRD_W / 2, -BIRD_H / 2, BIRD_W, BIRD_H);
-    } else {
-      ctx.beginPath();
-      ctx.arc(0, 0, BIRD_RADIUS, 0, Math.PI * 2);
-      ctx.fillStyle = isBest ? "#60a5fa" : "#fde047";
-      ctx.fill();
     }
     ctx.restore();
   }
@@ -207,10 +191,10 @@ function drawFlatWorld(ctx: CanvasRenderingContext2D, sim: Simulation, floorY: n
 function drawFlatBirds(
   ctx: CanvasRenderingContext2D,
   alive: BirdState[],
-  best: BirdState | undefined,
   sim: Simulation,
 ): void {
   const maxFall = sim.config.maxFallSpeed;
+  const flatPalette = ["#fde047", "#60a5fa", "#f87171"] as const;
   for (const bird of alive) {
     const tilt = Math.max(-1, Math.min(1, bird.vy / maxFall)) * MAX_TILT;
     ctx.save();
@@ -218,7 +202,7 @@ function drawFlatBirds(
     ctx.rotate(tilt);
     ctx.beginPath();
     ctx.arc(0, 0, BIRD_RADIUS, 0, Math.PI * 2);
-    ctx.fillStyle = bird === best ? "#fb923c" : "#fde047";
+    ctx.fillStyle = flatPalette[bird.colorIndex % flatPalette.length] ?? "#fde047";
     ctx.fill();
     ctx.lineWidth = 1.5;
     ctx.strokeStyle = "#422006";

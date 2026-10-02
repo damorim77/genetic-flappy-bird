@@ -17,6 +17,7 @@ function fakeBird(fitness: number): BirdState {
     y: 300,
     vy: 0,
     alive: true,
+    colorIndex: 0,
     fitness,
     genome: randomGenome(mulberry32(fitness + 1)),
   };

@@ -18,6 +18,7 @@ export interface SpriteSheet {
   /** 3 frames de batida, na ordem up -> mid -> down. */
   yellowBird: readonly [HTMLImageElement, HTMLImageElement, HTMLImageElement];
   blueBird: readonly [HTMLImageElement, HTMLImageElement, HTMLImageElement];
+  redBird: readonly [HTMLImageElement, HTMLImageElement, HTMLImageElement];
 }
 
 const SPRITE_DIR = "/sprites";
@@ -35,6 +36,11 @@ const BLUE = [
   `${SPRITE_DIR}/bluebird-upflap.png`,
   `${SPRITE_DIR}/bluebird-midflap.png`,
   `${SPRITE_DIR}/bluebird-downflap.png`,
+] as const;
+const RED = [
+  `${SPRITE_DIR}/redbird-upflap.png`,
+  `${SPRITE_DIR}/redbird-midflap.png`,
+  `${SPRITE_DIR}/redbird-downflap.png`,
 ] as const;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -63,11 +69,15 @@ export function loadSprites(rng: () => number = Math.random): Promise<SpriteShee
     loadImage(BLUE[0]),
     loadImage(BLUE[1]),
     loadImage(BLUE[2]),
-  ]).then(([bg, base, pipe, yUp, yMid, yDown, bUp, bMid, bDown]) => ({
+    loadImage(RED[0]),
+    loadImage(RED[1]),
+    loadImage(RED[2]),
+  ]).then(([bg, base, pipe, yUp, yMid, yDown, bUp, bMid, bDown, rUp, rMid, rDown]) => ({
     background: bg,
     base,
     pipe,
     yellowBird: [yUp, yMid, yDown],
     blueBird: [bUp, bMid, bDown],
+    redBird: [rUp, rMid, rDown],
   }));
 }

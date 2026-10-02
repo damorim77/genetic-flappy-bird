@@ -232,6 +232,7 @@ export class Simulation {
       y: BIRD_START_Y,
       vy: 0,
       alive: true,
+      colorIndex: Math.floor(this.rng() * 3),
       fitness: 0,
       genome,
     }));
