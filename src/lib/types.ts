@@ -42,6 +42,21 @@ export interface PipeState {
   width: number;
 }
 
+/**
+ * Eventos acumulados desde o último drain. A engine só CONTA (inteiros puro);
+ * quem decide virar som é a camada de UI, mantendo a engine sem DOM.
+ */
+export interface SimEvents {
+  /** Pulos disparados pelos cérebros (qualquer pássaro). */
+  jumps: number;
+  /** Pássaros que morreram no período. */
+  deaths: number;
+  /** Canos que saíram completamente da tela (≈ um ponto do "flock"). */
+  pipesPassed: number;
+  /** Gerações concluídas (extinção ou teto de ticks). */
+  generations: number;
+}
+
 /** Snapshot somente-leitura para a UI React (atualizado com throttle). */
 export interface SimStats {
   generation: number;

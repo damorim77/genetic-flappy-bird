@@ -15,7 +15,7 @@ import {
   WORLD_HEIGHT,
   WORLD_WIDTH,
 } from "./config";
-import type { BirdState, Genome, PipeState, Rng, SimConfig, SimStats } from "./types";
+import type { BirdState, Genome, PipeState, Rng, SimConfig, SimEvents, SimStats } from "./types";
 
 export class Simulation {
   readonly rng: Rng;
@@ -27,11 +27,14 @@ export class Simulation {
   solvedGeneration: number | null = null;
   maxTicksReached = false;
   history: number[] = [];
+  /** Pixels percorridos pelos canos desde o reset — só render (scroll do chão). */
+  distance = 0;
   birds: BirdState[] = [];
   pipes: PipeState[] = [];
   private mutationRate: number;
   private speedMultiplier: number;
   private nextPipeId = 0;
+  private events: SimEvents = { jumps: 0, deaths: 0, pipesPassed: 0, generations: 0 };
 
   constructor(rng: Rng = Math.random, config: SimConfig = DEFAULT_CONFIG) {
     this.rng = rng;
@@ -49,6 +52,8 @@ export class Simulation {
     this.solvedGeneration = null;
     this.maxTicksReached = false;
     this.history = [];
+    this.distance = 0;
+    this.events = { jumps: 0, deaths: 0, pipesPassed: 0, generations: 0 };
     const genomes: Genome[] = [];
     for (let i = 0; i < this.config.population; i++) {
       genomes.push(randomGenome(this.rng));
@@ -90,6 +95,7 @@ export class Simulation {
         inputVel * bird.genome.geneC;
       if (result > bird.genome.geneT) {
         bird.vy = jumpVelocity;
+        this.events.jumps += 1;
       }
     }
 
@@ -99,6 +105,7 @@ export class Simulation {
       bird.y += bird.vy;
     }
 
+    this.distance += pipeSpeed;
     for (const pipe of this.pipes) {
       pipe.x -= pipeSpeed;
     }
@@ -106,7 +113,11 @@ export class Simulation {
     if (lastPipe !== undefined && lastPipe.x < WORLD_WIDTH - pipeSpacingPx) {
       this.pipes.push(this.makePipe(WORLD_WIDTH, lastPipe.gapCenterY));
     }
-    this.pipes = this.pipes.filter((p) => p.x + p.width > 0);
+    this.pipes = this.pipes.filter((p) => {
+      // Cano que já saiu inteiro da tela = um "ponto" do flock (1x por cano).
+      if (p.x + p.width <= 0) this.events.pipesPassed += 1;
+      return p.x + p.width > 0;
+    });
 
     const floorY = WORLD_HEIGHT - GROUND_HEIGHT;
     let aliveCount = 0;
@@ -129,6 +140,7 @@ export class Simulation {
       }
       if (dead) {
         bird.alive = false;
+        this.events.deaths += 1;
         bird.fitness +=
           Math.max(0, 1 - Math.abs(bird.y - nextPipe.gapCenterY) / WORLD_HEIGHT) * 0.5;
       } else {
@@ -165,6 +177,16 @@ export class Simulation {
     };
   }
 
+  /**
+   * Lê e zera os contadores de eventos. A UI drena 1x por frame; a engine
+   * permanece pura (nada de DOM/áudio aqui dentro).
+   */
+  drainEvents(): SimEvents {
+    const drained = this.events;
+    this.events = { jumps: 0, deaths: 0, pipesPassed: 0, generations: 0 };
+    return drained;
+  }
+
   private evolve(): void {
     const endedByMaxTicks = this.ticksThisGeneration >= this.config.maxTicksPerGeneration;
     const endedGeneration = this.generation;
@@ -195,6 +217,7 @@ export class Simulation {
 
     this.generation += 1;
     this.ticksThisGeneration = 0;
+    this.events.generations += 1;
     this.maxTicksReached = endedByMaxTicks;
     if (endedByMaxTicks && this.solvedGeneration === null) {
       this.solvedGeneration = endedGeneration;

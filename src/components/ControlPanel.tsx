@@ -5,9 +5,11 @@ import type { SimStats } from "@/lib/types";
 interface ControlPanelProps {
   stats: SimStats;
   paused: boolean;
+  soundOn: boolean;
   mutationPct: number;
   speed: number;
   onTogglePause: () => void;
+  onToggleSound: () => void;
   onReset: () => void;
   onMutationChange: (pct: number) => void;
   onSpeedChange: (value: number) => void;
@@ -54,9 +56,11 @@ function Sparkline({ data }: { data: readonly number[] }) {
 export default function ControlPanel({
   stats,
   paused,
+  soundOn,
   mutationPct,
   speed,
   onTogglePause,
+  onToggleSound,
   onReset,
   onMutationChange,
   onSpeedChange,
@@ -132,6 +136,15 @@ export default function ControlPanel({
           Reiniciar do Zero
         </button>
       </div>
+
+      <button
+        type="button"
+        onClick={onToggleSound}
+        aria-pressed={soundOn}
+        className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-300 transition hover:border-emerald-500 hover:text-emerald-300"
+      >
+        Som: {soundOn ? "ligado" : "desligado"}
+      </button>
     </aside>
   );
 }

@@ -5,6 +5,8 @@ import ControlPanel from "@/components/ControlPanel";
 import { Simulation } from "@/lib/engine";
 import { draw } from "@/lib/renderer";
 import { INITIAL_STATS } from "@/lib/initialStats";
+import { loadSprites, type SpriteSheet } from "@/lib/assets";
+import { AudioManager } from "@/lib/audio";
 import {
   DEFAULT_CONFIG,
   MAX_TICKS_PER_FRAME,
@@ -17,9 +19,11 @@ import type { SimStats } from "@/lib/types";
 export default function GeneticFlappySimulator() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const simRef = useRef<Simulation | null>(null);
+  const audioRef = useRef<AudioManager | null>(null);
   const pausedRef = useRef(false);
   const [stats, setStats] = useState<SimStats>(INITIAL_STATS);
   const [paused, setPaused] = useState(false);
+  const [soundOn, setSoundOn] = useState(false);
   const [mutationPct, setMutationPct] = useState(Math.round(DEFAULT_CONFIG.mutationRate * 100));
   const [speed, setSpeed] = useState(DEFAULT_CONFIG.speedMultiplier);
 
@@ -36,35 +40,67 @@ export default function GeneticFlappySimulator() {
 
     const sim = new Simulation(Math.random);
     simRef.current = sim;
+    const audio = new AudioManager();
+    audioRef.current = audio;
 
+    let disposed = false;
     let raf = 0;
     let frame = 0;
     let acc = 0;
-    let last = performance.now();
 
-    const loop = (now: number) => {
-      const dt = Math.min(now - last, 100);
-      last = now;
-      if (!pausedRef.current) acc += dt * sim.getSpeedMultiplier();
-      let n = 0;
-      while (acc >= STEP_MS && n < MAX_TICKS_PER_FRAME) {
-        sim.tick();
-        acc -= STEP_MS;
-        n++;
-      }
-      if (n === MAX_TICKS_PER_FRAME) acc = 0;
-      draw(ctx, sim);
-      if (++frame % 10 === 0) setStats(sim.getStats());
+    const start = (sprites: SpriteSheet | null) => {
+      if (disposed) return;
+      let last = performance.now();
+
+      const loop = (now: number) => {
+        const dt = Math.min(now - last, 100);
+        last = now;
+        if (!pausedRef.current) acc += dt * sim.getSpeedMultiplier();
+        let n = 0;
+        while (acc >= STEP_MS && n < MAX_TICKS_PER_FRAME) {
+          sim.tick();
+          acc -= STEP_MS;
+          n++;
+        }
+        if (n === MAX_TICKS_PER_FRAME) acc = 0;
+
+        const events = sim.drainEvents();
+        audio.play("wing", events.jumps);
+        audio.play("hit", events.deaths);
+        audio.play("point", events.pipesPassed);
+        audio.play("die", events.generations);
+
+        draw(ctx, sim, sprites);
+        if (++frame % 10 === 0) setStats(sim.getStats());
+        raf = requestAnimationFrame(loop);
+      };
+
       raf = requestAnimationFrame(loop);
     };
 
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    // Cenário sorteado por reload; se os sprites falharem, roda em formas-planas.
+    loadSprites()
+      .then(start)
+      .catch(() => start(null));
+
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(raf);
+      audioRef.current = null;
+    };
   }, []);
 
   const togglePause = useCallback(() => {
     pausedRef.current = !pausedRef.current;
     setPaused(pausedRef.current);
+  }, []);
+
+  const toggleSound = useCallback(() => {
+    setSoundOn((prev) => {
+      const next = !prev;
+      audioRef.current?.setEnabled(next);
+      return next;
+    });
   }, []);
 
   const reset = useCallback(() => {
@@ -92,9 +128,11 @@ export default function GeneticFlappySimulator() {
       <ControlPanel
         stats={stats}
         paused={paused}
+        soundOn={soundOn}
         mutationPct={mutationPct}
         speed={speed}
         onTogglePause={togglePause}
+        onToggleSound={toggleSound}
         onReset={reset}
         onMutationChange={changeMutation}
         onSpeedChange={changeSpeed}

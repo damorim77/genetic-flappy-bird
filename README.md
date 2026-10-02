@@ -26,7 +26,14 @@ pula se resultado > geneT
 
 - Taxa de mutação (1–20%), Velocidade (1–20x, acumulador de passo fixo independente do monitor)
 - Pausar/Retomar (sem fast-forward ao despausar), Reiniciar do Zero
+- Som (desligado por padrão — o clique no botão é o gesto que libera o áudio)
 - Sparkline do melhor fitness por geração
+
+## Visual e áudio
+
+- Sprites (pássaros amarelo/azul, cano, chão e cenário) e efeitos sonoros (wing, hit, point, die) do repositório [`samuelcust/flappy-bird-assets`](https://github.com/samuelcust/flappy-bird-assets), sob licença **MIT** — © 2019 Samuel Custódio. Cópia verbatim da licença em [`public/LICENSE`](public/LICENSE).
+- O cenário (dia/noite) é sorteado a cada reload. O pássaro drawing usa o sprite nativo 34x24, com rotação proporcional à velocidade Y.
+- Se os sprites não carregarem, o renderer cai automaticamente no modo formas-planas — a simulação nunca depende dos assets.
 
 ## Nota de comportamento
 
