@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+*.log
+.env*
+next-env.d.ts
+.eslintcache
+*.tsbuildinfo
+.playwright-mcp/
