@@ -13,10 +13,12 @@ const MAX_TILT = 0.7;
 
 /**
  * Métricas medidas do sprite pipe-green.png (52x320):
- * tampa nas linhas 0..23 (52 de largura) e corpo nas linhas 24..319 (48 de largura).
- * Slicing por fonte mantém a escala — nada de cano esticado.
+ * tampa nas linhas 0..23 (largura total, col 0..51) e corpo nas linhas 24..319
+ * (col 2..49 — 2px de insets na esquerda, borda escura na direita em 49..50).
+ * Slicing por fonte mantém a escala — nada de cano esticado nem tampa travada.
  */
 const PIPE_CAP_SRC_H = 24;
+const PIPE_BODY_SRC_X = 2;
 const PIPE_BODY_SRC_Y = 24;
 const PIPE_BODY_SRC_W = 48;
 const PIPE_BODY_SRC_H = 296;
@@ -123,7 +125,7 @@ function drawPipeSegment(
     const destChunk = Math.min(bodyChunk, height - filled);
     ctx.drawImage(
       img,
-      0,
+      PIPE_BODY_SRC_X,
       PIPE_BODY_SRC_Y,
       PIPE_BODY_SRC_W,
       destChunk / scaleY,
