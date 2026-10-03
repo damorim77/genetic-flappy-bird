@@ -9,7 +9,7 @@
 
 ```powershell
 npm run typecheck     # tsc --noEmit
-npm test              # vitest run — 15 testes, ~6s
+npm test              # vitest run — 19 testes, ~6s
 npm run lint          # eslint .   (Next 16 não tem `next lint`)
 npm run build         # derruba com erro de tipo, não roda lint
 ```

@@ -41,6 +41,9 @@ export const MAX_MUTATION_RATE = 0.2;
 export const MIN_SPEED = 1;
 export const MAX_SPEED = 20;
 
+/** Cadáveres: queda mais rápida que a viva (animação de morte no renderer). */
+export const CORPSE_MAX_FALL = 14;
+
 /** Game loop (render): passo lógico fixo e teto anti-espiral por frame. */
 export const STEP_MS = 1000 / 60;
 export const MAX_TICKS_PER_FRAME = 60;

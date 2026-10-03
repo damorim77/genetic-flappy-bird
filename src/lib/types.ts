@@ -33,6 +33,19 @@ export interface BirdState {
   genome: Genome;
 }
 
+/**
+ * Cadáver de um pássaro morto: queda visual pura (sem fitness, sem rng,
+ * sem colisão). Vive em `Simulation.corpses`, fora do array `birds`,
+ * para não influenciar GA nem estatísticas.
+ */
+export interface CorpseState {
+  y: number;
+  vy: number;
+  colorIndex: number;
+  /** Ticks desde a morte — alimenta a rotação nariz-para-baixo no renderer. */
+  fallTicks: number;
+}
+
 /** Estado mutável de um cano (obstáculo). */
 export interface PipeState {
   id: number;

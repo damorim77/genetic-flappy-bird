@@ -84,7 +84,7 @@ npm run dev                        # http://localhost:3000
 ### Verificação
 
 ```powershell
-npm test                           # vitest: 15 testes (unit + integração)
+npm test                           # vitest: 19 testes (unit + integração)
 npm run lint                       # eslint .
 npm run typecheck                  # tsc --noEmit (strict + noUncheckedIndexedAccess)
 npm run build                      # build Next/Turbopack de produção
@@ -102,7 +102,7 @@ src/lib/renderer.ts                       # draw() puro (sprites + fallback plan
 src/lib/assets.ts                         # preload dos sprites (client-only)
 src/lib/audio.ts                          # AudioManager (pool + cooldown por som)
 src/lib/config.ts, src/lib/types.ts       # constantes e contratos
-tests/                                    # 15 testes vitest (headless, seeds fixos)
+tests/                                    # 19 testes vitest (headless, seeds fixos)
 docs/PLAN.md                              # plano técnico completo
 docs/assets/demo.gif                      # GIF de demo do README
 public/sprites/, public/audio/            # assets (MIT, ver public/LICENSE)

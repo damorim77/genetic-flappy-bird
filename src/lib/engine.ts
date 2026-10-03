@@ -3,6 +3,7 @@ import {
   BIRD_RADIUS,
   BIRD_START_Y,
   BIRD_X,
+  CORPSE_MAX_FALL,
   DEFAULT_CONFIG,
   GAP_MARGIN,
   GROUND_HEIGHT,
@@ -15,7 +16,7 @@ import {
   WORLD_HEIGHT,
   WORLD_WIDTH,
 } from "./config";
-import type { BirdState, Genome, PipeState, Rng, SimConfig, SimEvents, SimStats } from "./types";
+import type { BirdState, CorpseState, Genome, PipeState, Rng, SimConfig, SimEvents, SimStats } from "./types";
 
 export class Simulation {
   readonly rng: Rng;
@@ -30,6 +31,8 @@ export class Simulation {
   /** Pixels percorridos pelos canos desde o reset — só render (scroll do chão). */
   distance = 0;
   birds: BirdState[] = [];
+  /** Cadáveres em queda (animação da morte): fora do GA, limpos no evolve/reset. */
+  corpses: CorpseState[] = [];
   pipes: PipeState[] = [];
   private mutationRate: number;
   private speedMultiplier: number;
@@ -53,6 +56,7 @@ export class Simulation {
     this.maxTicksReached = false;
     this.history = [];
     this.distance = 0;
+    this.corpses = [];
     this.events = { jumps: 0, deaths: 0, pipesPassed: 0, generations: 0 };
     const genomes: Genome[] = [];
     for (let i = 0; i < this.config.population; i++) {
@@ -75,8 +79,9 @@ export class Simulation {
   }
 
   /**
-   * Um tick lógico (1/60s). Ordem pinada: cérebro -> física (pássaros + canos)
-   * -> colisão -> fitness. Mortos no tick não pontuam; recebem apenas o tiebreak.
+   * Um tick lógico (1/60s). Ordem pinada: cérebro -> física (pássaros,
+   * cadáveres + canos) -> colisão -> fitness. Mortos no tick não pontuam;
+   * recebem apenas o tiebreak.
    */
   tick(): void {
     const nextPipe = this.pipes.find((p) => p.x + p.width + BIRD_RADIUS > BIRD_X);
@@ -104,6 +109,8 @@ export class Simulation {
       bird.vy = Math.min(bird.vy + gravity, maxFallSpeed);
       bird.y += bird.vy;
     }
+
+    this.updateCorpses();
 
     this.distance += pipeSpeed;
     for (const pipe of this.pipes) {
@@ -143,6 +150,12 @@ export class Simulation {
         this.events.deaths += 1;
         bird.fitness +=
           Math.max(0, 1 - Math.abs(bird.y - nextPipe.gapCenterY) / WORLD_HEIGHT) * 0.5;
+        this.corpses.push({
+          y: bird.y,
+          vy: bird.vy,
+          colorIndex: bird.colorIndex,
+          fallTicks: 0,
+        });
       } else {
         bird.fitness += 1;
         aliveCount += 1;
@@ -187,6 +200,21 @@ export class Simulation {
     return drained;
   }
 
+  /**
+   * Física dos cadáveres: queda com gravidade até sair inteiro da tela.
+   * Não consome rng nem toca fitness/eventos — determinismo do GA intacto.
+   */
+  private updateCorpses(): void {
+    const { gravity } = this.config;
+    const exitY = WORLD_HEIGHT + BIRD_RADIUS * 2;
+    for (const corpse of this.corpses) {
+      corpse.vy = Math.min(corpse.vy + gravity, CORPSE_MAX_FALL);
+      corpse.y += corpse.vy;
+      corpse.fallTicks += 1;
+    }
+    this.corpses = this.corpses.filter((c) => c.y <= exitY);
+  }
+
   private evolve(): void {
     const endedByMaxTicks = this.ticksThisGeneration >= this.config.maxTicksPerGeneration;
     const endedGeneration = this.generation;
@@ -217,6 +245,7 @@ export class Simulation {
 
     this.generation += 1;
     this.ticksThisGeneration = 0;
+    this.corpses = [];
     this.events.generations += 1;
     this.maxTicksReached = endedByMaxTicks;
     if (endedByMaxTicks && this.solvedGeneration === null) {

@@ -1,7 +1,7 @@
 import { BIRD_RADIUS, BIRD_X, GROUND_HEIGHT, WORLD_HEIGHT, WORLD_WIDTH } from "./config";
 import type { Simulation } from "./engine";
 import type { SpriteSheet } from "./assets";
-import type { BirdState } from "./types";
+import type { BirdState, CorpseState } from "./types";
 
 /** Tamanho nativo do sprite do pássaro (34x24) — mantido 1:1 por decisão de design. */
 const BIRD_W = 34;
@@ -10,6 +10,11 @@ const BIRD_H = 24;
 const FLAP_TICKS = 5;
 /** Inclinação máxima por velocidade extrema (±40°). */
 const MAX_TILT = 0.7;
+/** Cadáver: nariz-para-baixo completo (π/2) após estes ticks de queda. */
+const CORPSE_TILT_TICKS = 30;
+const CORPSE_TILT_MAX = Math.PI / 2;
+/** Cores do modo formas-planas (mesma ordem do colorIndex). */
+const FLAT_PALETTE = ["#fde047", "#60a5fa", "#f87171"] as const;
 
 /**
  * Métricas medidas do sprite pipe-green.png (52x320):
@@ -42,9 +47,11 @@ export function draw(
 
   if (sprites === null) {
     drawFlatWorld(ctx, sim, floorY);
+    drawFlatCorpses(ctx, sim.corpses);
     drawFlatBirds(ctx, alive, sim);
   } else {
     drawSpriteWorld(ctx, sprites, sim, floorY);
+    drawSpriteCorpses(ctx, sprites, sim.corpses);
     drawSpriteBirds(ctx, sprites, alive, sim);
   }
 
@@ -163,6 +170,30 @@ function drawSpriteBirds(
   }
 }
 
+/**
+ * Cadáveres em queda: asa congelada no midflap e nariz girando para baixo
+ * (não batem, não colidem — só visual, alimentado por sim.corpses).
+ */
+function drawSpriteCorpses(
+  ctx: CanvasRenderingContext2D,
+  sprites: SpriteSheet,
+  corpses: readonly CorpseState[],
+): void {
+  const palette = [sprites.yellowBird, sprites.blueBird, sprites.redBird] as const;
+  for (const corpse of corpses) {
+    const frames = palette[corpse.colorIndex % palette.length] ?? sprites.yellowBird;
+    const img = frames[1] ?? frames[0];
+    const tilt = Math.min(CORPSE_TILT_MAX, (corpse.fallTicks / CORPSE_TILT_TICKS) * CORPSE_TILT_MAX);
+    ctx.save();
+    ctx.translate(BIRD_X, corpse.y);
+    ctx.rotate(tilt);
+    if (img !== undefined) {
+      ctx.drawImage(img, -BIRD_W / 2, -BIRD_H / 2, BIRD_W, BIRD_H);
+    }
+    ctx.restore();
+  }
+}
+
 /* ------------------------------------------------------- modo formas-planas */
 
 function drawFlatWorld(ctx: CanvasRenderingContext2D, sim: Simulation, floorY: number): void {
@@ -196,7 +227,6 @@ function drawFlatBirds(
   sim: Simulation,
 ): void {
   const maxFall = sim.config.maxFallSpeed;
-  const flatPalette = ["#fde047", "#60a5fa", "#f87171"] as const;
   for (const bird of alive) {
     const tilt = Math.max(-1, Math.min(1, bird.vy / maxFall)) * MAX_TILT;
     ctx.save();
@@ -204,7 +234,24 @@ function drawFlatBirds(
     ctx.rotate(tilt);
     ctx.beginPath();
     ctx.arc(0, 0, BIRD_RADIUS, 0, Math.PI * 2);
-    ctx.fillStyle = flatPalette[bird.colorIndex % flatPalette.length] ?? "#fde047";
+    ctx.fillStyle = FLAT_PALETTE[bird.colorIndex % FLAT_PALETTE.length] ?? "#fde047";
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "#422006";
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawFlatCorpses(ctx: CanvasRenderingContext2D, corpses: readonly CorpseState[]): void {
+  for (const corpse of corpses) {
+    const tilt = Math.min(CORPSE_TILT_MAX, (corpse.fallTicks / CORPSE_TILT_TICKS) * CORPSE_TILT_MAX);
+    ctx.save();
+    ctx.translate(BIRD_X, corpse.y);
+    ctx.rotate(tilt);
+    ctx.beginPath();
+    ctx.arc(0, 0, BIRD_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = FLAT_PALETTE[corpse.colorIndex % FLAT_PALETTE.length] ?? "#fde047";
     ctx.fill();
     ctx.lineWidth = 1.5;
     ctx.strokeStyle = "#422006";
