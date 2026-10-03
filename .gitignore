@@ -7,3 +7,5 @@ next-env.d.ts
 .eslintcache
 *.tsbuildinfo
 .playwright-mcp/
+
+.vercel
